@@ -1,0 +1,52 @@
+{
+	"author": {
+		"name": "Baptiste Pillot",
+		"email": "baptiste@pillot.fr"
+	},
+	"dependencies": {
+		"typescript": "~5.8"
+	},
+	"description": "Runtime default value reflection from TypeScript files for properties",
+	"devDependencies": {
+		"@types/node": "^22.10"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"exports": {
+		"import": "./esm/property-default.js",
+		"require": "./cjs/property-default.js"
+	},
+	"files": [
+		"LICENSE",
+		"README.md",
+		"*/property-default.d.ts",
+		"*/property-default.js"
+	],
+	"homepage": "https://it.rocks",
+	"keywords": [
+		"backend",
+		"default",
+		"it.rocks",
+		"parse",
+		"parsing",
+		"primitive",
+		"property",
+		"reflection",
+		"utility",
+		"value"
+	],
+	"license": "ISC",
+	"name": "@itrocks/property-default",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/itrocks-ts/property-default.git"
+	},
+	"scripts": {
+		"build": "npm run build:cjs && npm run build:esm",
+		"build:cjs": "tsc -p tsconfig.cjs.json",
+		"build:esm": "tsc -p tsconfig.esm.json"
+	},
+	"types": "./esm/property-default.d.ts",
+	"version": "0.0.1"
+}

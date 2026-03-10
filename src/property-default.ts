@@ -1,9 +1,10 @@
+import { KeyOf }        from '@itrocks/class-type'
 import { readFileSync } from 'node:fs'
 import { dirname }      from 'node:path'
 import { basename }     from 'node:path'
 import ts               from 'typescript'
 
-export type PropertyDefaults = Record<string, any>
+export type PropertyDefaults<T extends object> = { [K in KeyOf<T>]?: T[K] }
 
 function fileContent(file: string)
 {
@@ -49,11 +50,11 @@ function parseLiteral(node: ts.Expression): any
 	return undefined
 }
 
-export function propertyDefaultsFromFile(file: string): PropertyDefaults
+export function propertyDefaultsFromFile<T extends object>(file: string): PropertyDefaults<T>
 {
-	const content         = fileContent(file)
-	const propertyDefaults: PropertyDefaults = {}
-	const sourceFile      = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true)
+	const content          = fileContent(file)
+	const propertyDefaults = {} as PropertyDefaults<T>
+	const sourceFile       = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true)
 
 	function parseNode(node: ts.Node)
 	{
@@ -65,7 +66,7 @@ export function propertyDefaultsFromFile(file: string): PropertyDefaults
 			for (const member of node.members) {
 				if (ts.isPropertyDeclaration(member)) {
 					const initializer = member.initializer ? parseLiteral(member.initializer) : undefined
-					propertyDefaults[(member.name as ts.Identifier).text] = initializer
+					propertyDefaults[(member.name as ts.Identifier).text as KeyOf<T>] = initializer
 				}
 			}
 			return

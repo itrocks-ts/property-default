@@ -1,10 +1,9 @@
-import { KeyOf }        from '@itrocks/class-type'
 import { readFileSync } from 'node:fs'
 import { dirname }      from 'node:path'
 import { basename }     from 'node:path'
 import ts               from 'typescript'
 
-export type PropertyDefaults<T extends object> = { [K in KeyOf<T>]?: T[K] }
+export type PropertyDefaults<T extends object, K extends keyof T = keyof T> = Partial<Pick<T, K>>
 
 function fileContent(file: string)
 {
@@ -15,6 +14,14 @@ function fileContent(file: string)
 		const fileName = basename(file)
 		return readFileSync(dirname(file) + '/../src/' + fileName.substring(0, fileName.lastIndexOf('.')) + '.ts', 'utf8')
 	}
+}
+
+function getPropertyName(name: ts.PropertyName): string | undefined
+{
+	if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+		return name.text
+	}
+	return undefined
 }
 
 function parseLiteral(node: ts.Expression): any
@@ -64,10 +71,10 @@ export function propertyDefaultsFromFile<T extends object>(file: string): Proper
 			&& node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
 		) {
 			for (const member of node.members) {
-				if (ts.isPropertyDeclaration(member)) {
-					const initializer = member.initializer ? parseLiteral(member.initializer) : undefined
-					propertyDefaults[(member.name as ts.Identifier).text as KeyOf<T>] = initializer
-				}
+				if (!ts.isPropertyDeclaration(member) || !member.initializer) continue
+				const name = getPropertyName(member.name as ts.Identifier)
+				if (!name) continue
+				propertyDefaults[name as keyof T] = parseLiteral(member.initializer)
 			}
 			return
 		}

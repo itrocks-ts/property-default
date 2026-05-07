@@ -4,7 +4,7 @@
 		"email": "baptiste@pillot.fr"
 	},
 	"dependencies": {
-		"typescript": "~5.9"
+		"typescript": "~6.0"
 	},
 	"description": "Runtime default value reflection from TypeScript files for properties",
 	"devDependencies": {
@@ -48,5 +48,5 @@
 		"build:esm": "tsc -p tsconfig.esm.json"
 	},
 	"types": "./esm/property-default.d.ts",
-	"version": "0.2.0"
+	"version": "0.2.1"
 }

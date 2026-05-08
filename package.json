@@ -4,24 +4,21 @@
 		"email": "baptiste@pillot.fr"
 	},
 	"dependencies": {
-		"typescript": "~6.0"
+		"typescript": "^6.0"
 	},
 	"description": "Runtime default value reflection from TypeScript files for properties",
 	"devDependencies": {
 		"@types/node": "^24.10"
 	},
 	"engines": {
-		"node": ">=18"
+		"node": ">=24"
 	},
-	"exports": {
-		"import": "./esm/property-default.js",
-		"require": "./cjs/property-default.js"
-	},
+	"exports": "./cjs/property-default.js",
 	"files": [
 		"LICENSE",
 		"README.md",
-		"*/property-default.d.ts",
-		"*/property-default.js"
+		"cjs",
+		"!*.map"
 	],
 	"homepage": "https://it.rocks",
 	"keywords": [
@@ -43,10 +40,7 @@
 		"url": "git+https://github.com/itrocks-ts/property-default.git"
 	},
 	"scripts": {
-		"build": "npm run build:cjs && npm run build:esm",
-		"build:cjs": "tsc -p tsconfig.cjs.json",
-		"build:esm": "tsc -p tsconfig.esm.json"
+		"build": "tsc"
 	},
-	"types": "./esm/property-default.d.ts",
-	"version": "0.2.1"
+	"version": "0.2.2"
 }

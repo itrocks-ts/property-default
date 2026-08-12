@@ -1,23 +1,21 @@
-import { readFileSync } from 'node:fs'
-import { basename }     from 'node:path'
-import { dirname }      from 'node:path'
-import { resolve }      from 'node:path'
-import {
-	isArrayLiteralExpression,
-	isClassDeclaration,
-	isIdentifier,
-	isNoSubstitutionTemplateLiteral,
-	isNumericLiteral,
-	isObjectLiteralExpression,
-	isPropertyAssignment,
-	isPropertyDeclaration,
-	isStringLiteral,
-	SyntaxKind,
-	type Expression,
-	type Node,
-	type PropertyName,
-	type SourceFile
-} from 'typescript/unstable/ast'
+import { readFileSync }                    from 'node:fs'
+import { basename }                        from 'node:path'
+import { dirname }                         from 'node:path'
+import { resolve }                         from 'node:path'
+import { type Expression }                 from 'typescript/unstable/ast'
+import { isArrayLiteralExpression }        from 'typescript/unstable/ast'
+import { isClassDeclaration }              from 'typescript/unstable/ast'
+import { isIdentifier }                    from 'typescript/unstable/ast'
+import { isNoSubstitutionTemplateLiteral } from 'typescript/unstable/ast'
+import { isNumericLiteral }                from 'typescript/unstable/ast'
+import { isObjectLiteralExpression }       from 'typescript/unstable/ast'
+import { isPropertyAssignment }            from 'typescript/unstable/ast'
+import { isPropertyDeclaration }           from 'typescript/unstable/ast'
+import { isStringLiteral }                 from 'typescript/unstable/ast'
+import { type Node }                       from 'typescript/unstable/ast'
+import { type PropertyName }               from 'typescript/unstable/ast'
+import { type SourceFile }                 from 'typescript/unstable/ast'
+import { SyntaxKind }                      from 'typescript/unstable/ast'
 import { API } from 'typescript/unstable/sync'
 
 export type PropertyDefaults<T extends object, K extends keyof T = keyof T> = Partial<Pick<T, K>>

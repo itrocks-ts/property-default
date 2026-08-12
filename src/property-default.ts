@@ -1,87 +1,129 @@
 import { readFileSync } from 'node:fs'
-import { dirname }      from 'node:path'
 import { basename }     from 'node:path'
-import ts               from 'typescript'
+import { dirname }      from 'node:path'
+import { resolve }      from 'node:path'
+import {
+	isArrayLiteralExpression,
+	isClassDeclaration,
+	isIdentifier,
+	isNoSubstitutionTemplateLiteral,
+	isNumericLiteral,
+	isObjectLiteralExpression,
+	isPropertyAssignment,
+	isPropertyDeclaration,
+	isStringLiteral,
+	SyntaxKind,
+	type Expression,
+	type Node,
+	type PropertyName,
+	type SourceFile
+} from 'typescript/unstable/ast'
+import { API } from 'typescript/unstable/sync'
 
 export type PropertyDefaults<T extends object, K extends keyof T = keyof T> = Partial<Pick<T, K>>
 
-function fileContent(file: string)
+function sourceFileName(file: string): string
 {
+	const sameDirectory = resolve(file.substring(0, file.lastIndexOf('.')) + '.ts')
 	try {
-		return readFileSync(file.substring(0, file.lastIndexOf('.')) + '.ts', 'utf8')
+		readFileSync(sameDirectory, 'utf8')
+		return sameDirectory
 	}
 	catch {
 		const fileName = basename(file)
-		return readFileSync(dirname(file) + '/../src/' + fileName.substring(0, fileName.lastIndexOf('.')) + '.ts', 'utf8')
+		const source   = resolve(
+			dirname(file),
+			'../src/' + fileName.substring(0, fileName.lastIndexOf('.')) + '.ts'
+		)
+		readFileSync(source, 'utf8')
+		return source
 	}
 }
 
-function getPropertyName(name: ts.PropertyName): string | undefined
+function getPropertyName(name: PropertyName): string | undefined
 {
-	if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+	if (isIdentifier(name) || isStringLiteral(name) || isNumericLiteral(name)) {
 		return name.text
 	}
 	return undefined
 }
 
-function parseLiteral(node: ts.Expression): any
+function parseLiteral(node: Expression): any
 {
-	if (node.kind === ts.SyntaxKind.FalseKeyword) {
+	if (node.kind === SyntaxKind.FalseKeyword) {
 		return false
 	}
-	if (node.kind === ts.SyntaxKind.NullKeyword) {
+	if (node.kind === SyntaxKind.NullKeyword) {
 		return null
 	}
-	if (node.kind === ts.SyntaxKind.TrueKeyword) {
+	if (node.kind === SyntaxKind.TrueKeyword) {
 		return true
 	}
-	if (ts.isArrayLiteralExpression(node)) {
+	if (isArrayLiteralExpression(node)) {
 		return node.elements.map(parseLiteral)
 	}
-	if (ts.isNumericLiteral(node)) {
+	if (isNumericLiteral(node)) {
 		return Number(node.text)
 	}
-	if (ts.isObjectLiteralExpression(node)) {
+	if (isObjectLiteralExpression(node)) {
 		const object: Record<string, any> = {}
 		for (const property of node.properties) {
-			if (ts.isPropertyAssignment(property)) {
-				const propertyName   = (property.name as ts.Identifier).text
-				object[propertyName] = parseLiteral(property.initializer)
+			if (isPropertyAssignment(property)) {
+				const propertyName = getPropertyName(property.name)
+				if (propertyName !== undefined) {
+					object[propertyName] = parseLiteral(property.initializer)
+				}
 			}
 		}
 		return object
 	}
-	if (ts.isNoSubstitutionTemplateLiteral(node) || ts.isStringLiteral(node)) {
+	if (isNoSubstitutionTemplateLiteral(node) || isStringLiteral(node)) {
 		return node.text
 	}
 	return undefined
 }
 
-export function propertyDefaultsFromFile<T extends object>(file: string): PropertyDefaults<T>
+function parseSourceFile<T extends object>(sourceFile: SourceFile): PropertyDefaults<T>
 {
-	const content          = fileContent(file)
 	const propertyDefaults = {} as PropertyDefaults<T>
-	const sourceFile       = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true)
 
-	function parseNode(node: ts.Node)
+	function parseNode(node: Node)
 	{
 		if (
-			ts.isClassDeclaration(node)
+			isClassDeclaration(node)
 			&& node.name
-			&& node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
+			&& node.modifiers?.some(modifier => modifier.kind === SyntaxKind.ExportKeyword)
 		) {
 			for (const member of node.members) {
-				if (!ts.isPropertyDeclaration(member) || !member.initializer) continue
-				const name = getPropertyName(member.name as ts.Identifier)
+				if (!isPropertyDeclaration(member) || !member.initializer) continue
+				const name = getPropertyName(member.name)
 				if (!name) continue
 				propertyDefaults[name as keyof T] = parseLiteral(member.initializer)
 			}
 			return
 		}
 
-		ts.forEachChild(node, parseNode)
+		node.forEachChild(parseNode)
 	}
 
 	parseNode(sourceFile)
 	return propertyDefaults
+}
+
+export function propertyDefaultsFromFile<T extends object>(file: string): PropertyDefaults<T>
+{
+	const source = sourceFileName(file)
+	const api    = new API({ cwd: dirname(source) })
+	try {
+		const snapshot   = api.updateSnapshot({ openFiles: [source] })
+		const project    = snapshot.getDefaultProjectForFile(source)
+		const sourceFile = project?.program.getSourceFile(source)
+		if (!sourceFile) {
+			throw new Error('TypeScript could not parse source file: ' + source)
+		}
+		return parseSourceFile<T>(sourceFile)
+	}
+	finally {
+		api.close()
+	}
 }
